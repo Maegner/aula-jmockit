@@ -10,10 +10,13 @@ import org.junit.runner.RunWith;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
+import pt.ulisboa.tecnico.softeng.activity.domain.exception.ActivityException;
+import pt.ulisboa.tecnico.softeng.bank.exception.BankException;
 import pt.ulisboa.tecnico.softeng.broker.interfaces.ActivityInterface;
 import pt.ulisboa.tecnico.softeng.broker.interfaces.BankInterface;
 import pt.ulisboa.tecnico.softeng.broker.interfaces.HotelInterface;
 import pt.ulisboa.tecnico.softeng.hotel.domain.Room.Type;
+import pt.ulisboa.tecnico.softeng.hotel.exception.HotelException;
 
 @RunWith(JMockit.class)
 public class AdventureProcessMethodMockTest {
@@ -55,6 +58,67 @@ public class AdventureProcessMethodMockTest {
 		Assert.assertEquals(PAYMENT_CONFIRMATION, adventure.getBankPayment());
 		Assert.assertEquals(HOTEL_REFERENCE, adventure.getRoomBooking());
 		Assert.assertEquals(ACTIVITY_REFERENCE, adventure.getActivityBooking());
+	}
+	
+	@Test
+	public void exceptionBank(@Mocked final BankInterface bankInterface,
+			@Mocked final HotelInterface hotelInterface, @Mocked final ActivityInterface activityInterface) {
+		new Expectations(){{
+			BankInterface.processPayment(IBAN, 300);
+			result = new BankException();
+		}};
+		Adventure adventure = new Adventure(this.broker, this.begin, this.end, 20, IBAN, 300);
+		try {
+			adventure.process();
+			Assert.fail();
+		}catch (BankException e) {
+			Assert.assertNull(adventure.getBankPayment());
+			Assert.assertNull(adventure.getActivityBooking());
+			Assert.assertNull(adventure.getRoomBooking());
+		}
+		
+	}
+	
+	@Test
+	public void exceptionHotel(@Mocked final BankInterface bankInterface,
+			@Mocked final HotelInterface hotelInterface, @Mocked final ActivityInterface activityInterface) {
+		new Expectations(){{
+			BankInterface.processPayment(IBAN, 300);
+			result = PAYMENT_CONFIRMATION;
+			HotelInterface.reserveHotel(Type.SINGLE, begin, end);
+			result = new HotelException();
+		}};
+		Adventure adventure = new Adventure(this.broker, this.begin, this.end, 20, IBAN, 300);
+		try {
+			adventure.process();
+			Assert.fail();
+		}catch (HotelException e) {
+			Assert.assertEquals(PAYMENT_CONFIRMATION, adventure.getBankPayment());
+			Assert.assertNull(adventure.getActivityBooking());
+			Assert.assertNull(adventure.getRoomBooking());
+		}
+	}
+	
+	@Test
+	public void exceptionActivity(@Mocked final BankInterface bankInterface,
+			@Mocked final HotelInterface hotelInterface, @Mocked final ActivityInterface activityInterface) {
+		new Expectations(){{
+			BankInterface.processPayment(IBAN, 300);
+			result = PAYMENT_CONFIRMATION;
+			HotelInterface.reserveHotel(Type.SINGLE, begin, end);
+			result = HOTEL_REFERENCE;
+			ActivityInterface.reserveActivity(begin, end, 20);
+			result = new ActivityException();
+		}};
+		Adventure adventure = new Adventure(this.broker, this.begin, this.end, 20, IBAN, 300);
+		try {
+			adventure.process();
+			Assert.fail();
+		}catch (ActivityException e) {
+			Assert.assertEquals(PAYMENT_CONFIRMATION, adventure.getBankPayment());
+			Assert.assertEquals(HOTEL_REFERENCE,adventure.getRoomBooking());
+			Assert.assertNull(adventure.getActivityBooking());
+		}
 	}
 
 	@After

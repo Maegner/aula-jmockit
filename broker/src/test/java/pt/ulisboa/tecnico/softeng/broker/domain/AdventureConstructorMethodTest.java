@@ -6,6 +6,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import mockit.Expectations;
+import pt.ulisboa.tecnico.softeng.bank.exception.BankException;
+
 public class AdventureConstructorMethodTest {
 	private Broker broker;
 
@@ -33,6 +36,7 @@ public class AdventureConstructorMethodTest {
 		Assert.assertNull(adventure.getActivityBooking());
 		Assert.assertNull(adventure.getRoomBooking());
 	}
+	
 
 	@After
 	public void tearDown() {
